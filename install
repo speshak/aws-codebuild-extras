@@ -1,14 +1,18 @@
-#!/bin/sh
+#!/bin/bash
 
 export CI=true
 export CODEBUILD=true
 
 export CODEBUILD_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 
-export CODEBUILD_GIT_BRANCH="$(git symbolic-ref HEAD --short 2>/dev/null)"
-if [ "$CODEBUILD_GIT_BRANCH" = "" ] ; then
-  CODEBUILD_GIT_BRANCH="$(git branch -a --contains HEAD | sed -n 2p | awk '{ printf $1 }')";
-  export CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/};
+if [[ "$CODEBUILD_WEBHOOK_TRIGGER" =~ ^branch/.* ]]; then
+  export CODEBUILD_GIT_BRANCH="${CODEBUILD_WEBHOOK_TRIGGER#branch/}"
+else
+  export CODEBUILD_GIT_BRANCH="$(git symbolic-ref HEAD --short 2>/dev/null)"
+  if [ "$CODEBUILD_GIT_BRANCH" = "" ] ; then
+    CODEBUILD_GIT_BRANCH="$(git branch -a --contains HEAD | sed -n 2p | awk '{ printf $1 }')";
+    export CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/};
+  fi
 fi
 
 export CODEBUILD_GIT_CLEAN_BRANCH="$(echo $CODEBUILD_GIT_BRANCH | tr '/' '.')"
